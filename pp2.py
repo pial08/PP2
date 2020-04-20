@@ -21,8 +21,9 @@ def updateTok():
         return False
 
 def reportError(tok):
-    print(tok)
-    print("error in lineno ", tok.lineno)
+    print("*** Error line ", tok.lineno, ".")
+    print(lexanalysis.lines[tok.lineno - 1])
+    print("*** syntax error")
     pass
 
 
@@ -99,6 +100,8 @@ def Formals():
             elif tok.value == const.RPAREN:
                 print("returning from formals")
                 return True
+        else:
+            reportError(tok)
     
 def StmtBlock():
     print("inside stmtBlock")

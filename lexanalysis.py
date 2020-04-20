@@ -256,7 +256,8 @@ f=open(fileName, 'r')
 if f.mode == 'r':
     contents = f.read()
 #print(contents)
-
+lines = contents.splitlines()
+print(lines)
 lexar.input(contents)
 #lexar.input("1.12e-6")
 
