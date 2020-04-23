@@ -12,6 +12,7 @@ stack = deque()
 
 print(tok)
 def updateTok():
+    #print("printing from updatetok OXOXOXOXOXOXXOOXOXOXO")
     global tok
     tok = lexanalysis.getNextToken()
     print(tok)
@@ -43,6 +44,7 @@ def Program():
 def ProgramP():
     updateTok()
     if tok != None:
+
         return Program()
     else: 
         print("ending")
@@ -110,7 +112,11 @@ def StmtBlock():
         if tok.value == const.RCURLEY:
             return True
         else:
-            return VariableDeclRec()
+            stmtBlckVar = VariableDeclRec() and printBool("token inside stmtBlock " + tok.value) and  tok.value == const.RCURLEY
+            updateTok()
+            return stmtBlckVar
+                
+
         """
         elif tok.value in const.typeList:
             return VariableDeclRec()
@@ -119,19 +125,25 @@ def StmtBlock():
         """
 def VariableDeclRec():
     print("inside varDecRec")
-    if tok.value == const.RCURLEY:
-            return True
-    elif tok.value in const.typeList and (updateTok() and tok.type == const.IDENT):
+    #if tok.value == const.RCURLEY:
+    #        return True
+    if tok.value in const.typeList and (updateTok() and tok.type == const.IDENT):
         updateTok()
         return VariableDecl() and (updateTok() and VariableDeclRec()) 
     else:
-        #print("going to statement")
+        print("going to statement........................")
         #return Stmt()
         while True:
-            if Stmt() and updateTok():
-                """if tok.value == const.ELSE:
+            print("inside while loop VarDeclRec !!!!!!!!!!!!!!!!!")
+            if Stmt(): 
+                if tok.value == const.RCURLEY:
+                    print("returning true from VarDeclRec")
+                    return True
+                if tok.value == const.ELSE:
                     print("else found")
-                    return True"""
+                    return True
+                updateTok()
+                
                 pass
             else:
                 return True
@@ -142,17 +154,29 @@ def Stmt():
     
     print("inside stmt tok value", tok)
     if tok.value == const.RCURLEY:
-        print("returning after LCURLEY")
+        print("returning after RCURLEY")
         return True
 
     #comment out due to debbuging
     #updateTok()
     if tok.value == const.IF:
         print("&&&&&& sending to if")
-        return updateTok() and IfStmt() and updateTok() and Stmt()
+        if updateTok() and IfStmt():
+            #updateTok()
+            if tok.value == const.RCURLEY:
+                print("RCURLEY found after ifSTMT......")
+                return True
+            else:
+                return  Stmt()
     
     if tok.value == const.WHILE:
-        return updateTok() and WhileStmt() and updateTok() and Stmt()
+        if updateTok() and WhileStmt():
+            if tok.value == const.RCURLEY:
+                print("RCURLEY found after WHILE_STMT......")
+            else:
+                print("STMT found instead of RCURLEY")
+                return Stmt()
+
 
     elif tok.value == const.FOR:
         return updateTok() and ForStmt() and updateTok() and Stmt()
@@ -173,7 +197,8 @@ def Stmt():
         return True
 
     elif tok.value == const.LCURLEY:
-        return StmtBlock()
+        
+        return StmtBlock() and printBool("returning from stmtBlock() " + tok.value)
     
     elif Expr() and tok.value == const.SEMICOLON:
         print("returning after getting expr() and semicolon")
@@ -301,9 +326,11 @@ def IfStmt():
         if updateTok() and (printBool("calling stmt() from if")) and not Stmt():
             print("ret false from ifStmt")
             return False
-        
-        if tok != None and tok.value != const.ELSE:
+        print("-----------", tok)
+        if tok.value == const.SEMICOLON:
             updateTok()
+        
+        
             
         if  tok != None and tok.value == const.ELSE:
             print("else found!!!")
@@ -312,11 +339,14 @@ def IfStmt():
                 print("returning false from else*****")
                 return False 
             else:
-                print("true for if with else------------------------------------")
+                print("true for if with else------------------------------------", tok)
                 return True
-        print("true for if-----------XXXX-------------------------")
-        return True
-
+        else:
+            print("true for if-----------XXXX-------------------------", tok)
+            return True
+    else:
+        reportError(tok)
+        return False
 
 
 def ForStmt():
@@ -352,21 +382,22 @@ def ForStmt():
 def WhileStmt():
     if tok.value == const.LPAREN:
         
-        ifVar = (updateTok() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
-        if not ifVar:
+        whileVar = (updateTok() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
+        if not whileVar:
             print("error inside while.....")
             return False
         
         if updateTok() and not Stmt():
+            print("false in while O_O_O_O_O_O_O_O_")
             return False           
-        print("true for while....")
+        print("true for while....", tok)
         return True
     else:
         return False
 
 
 def ReturnStmt():
-    print("inside return stmt()")
+    print("inside return stmt()", tok)
     if tok.value == const.SEMICOLON:
         return True
     elif Expr()  and (tok.value == const.SEMICOLON) and updateTok():
@@ -375,7 +406,8 @@ def ReturnStmt():
         return False
 
 def BreakStmt():
-    if tok.value == const.SEMICOLON and updateTok():
+    if tok.value == const.SEMICOLON:
+        print("inside breakstmt() ", tok)
         return True
 
 #PrintStmt  --> Print ( Expr + , ) ;
@@ -395,8 +427,16 @@ def PrintStmt():
                 #updateTok()
                 continue
             elif tok.value == const.RPAREN:
-                #updateTok()
-                return True
+                print("Rparenn found ........in print ")
+                updateTok()
+                print(tok)
+                if  tok != None and tok.value == const.SEMICOLON:
+                    print("returning true")
+                    return True
+                else:
+                    print("returning false")
+                    return False
+            
     else:
         return False
     
