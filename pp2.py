@@ -169,10 +169,11 @@ def Stmt():
             else:
                 return  Stmt()
     
-    if tok.value == const.WHILE:
+    elif tok.value == const.WHILE:
         if updateTok() and WhileStmt():
             if tok.value == const.RCURLEY:
                 print("RCURLEY found after WHILE_STMT......")
+                return True
             else:
                 print("STMT found instead of RCURLEY")
                 return Stmt()
