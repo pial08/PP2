@@ -91,19 +91,21 @@ def Formals():
     print("inside formals")
     if tok.value == const.RPAREN:
         return True
-    elif tok.value in const.typeList:
-        print("typelist found")
-        updateTok()
-        if tok.type == const.IDENT:
+
+    while True:
+        if tok.value in const.typeList:
+            print("typelist found")
             updateTok()
-            if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
-                return updateTok() and Formals()
-            
-            elif tok.value == const.RPAREN:
-                print("returning from formals")
-                return True
-        else:
-            reportError(tok)
+            if tok.type == const.IDENT:
+                updateTok()
+                if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
+                    continue
+                
+                elif tok.value == const.RPAREN:
+                    print("returning from formals")
+                    return True
+            else:
+                reportError(tok)
     
 def StmtBlock():
     print("inside stmtBlock")
