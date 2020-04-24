@@ -42,7 +42,7 @@ def Program():
 
 
 def ProgramP():
-    updateTok()
+    #updateTok()
     if tok != None:
 
         return Program()
@@ -93,6 +93,7 @@ def Formals():
         return True
 
     while True:
+        print("inside formal while loop....")
         if tok.value in const.typeList:
             print("typelist found")
             updateTok()
@@ -106,6 +107,7 @@ def Formals():
                     return True
             else:
                 reportError(tok)
+                return False
     
 def StmtBlock():
     print("inside stmtBlock")
@@ -180,9 +182,15 @@ def Stmt():
                 print("STMT found instead of RCURLEY")
                 return Stmt()
 
-
+    #changing for
     elif tok.value == const.FOR:
-        return updateTok() and ForStmt() and updateTok() and Stmt()
+        if updateTok() and ForStmt():
+            if tok.value == const.RCURLEY:
+                print("RCURLEY found after FOR_STMT......")
+                return True
+            else:
+                print("STMT found instead of RCURLEY")
+                return Stmt()
 
     #might need to add sth
     elif tok.value == const.BREAK:
@@ -286,11 +294,15 @@ def Expr():
         if tok.value in const.operatorList:
             print("operator found after constant")
             return updateTok() and Expr()
+            #return True
         else:
             #changed from return true to return Expr()
             return True
     
     
+    #elif tok.value == const.RPAREN:
+    #    print("this part executed ***********************", tok)
+    #    return True
     #ReadInteger ( )
     elif tok.value == const.READINT or tok.value == const.READLINE:
         print("readline or readint found............................")
@@ -307,15 +319,29 @@ def Actuals():
     if tok.value == const.RPAREN:
         return True
     
-    updateTok()
+
+    while True:
+        print("tok at begin of while in actuals...", tok)
+        if not Expr():
+            return False
+        print("Tok value inside actuals.....", tok)
+        if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
+            #updateTok()
+            continue
+        
+        if tok.value == const.RPAREN:
+            updateTok()
+            return True
+    """#updateTok()
     if not Expr():
         return False
-    updateTok()
+    #updateTok()
+    print("Token value inside actuals........", tok)
     if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
         return updateTok() and Actuals()
     
     elif tok.value == const.RPAREN:
-        return True
+        return True"""
 
 
     
@@ -361,7 +387,7 @@ def ForStmt():
             print("First expresion not found")
             pass
         # for(i = 1;)
-        elif not Expr() or (updateTok() and tok.value != const.SEMICOLON):
+        elif not Expr() or ( tok.value != const.SEMICOLON):
             print("second part is returning false")
             return False
 
