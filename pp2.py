@@ -9,6 +9,9 @@ from collections import deque
 tok = lexanalysis.getNextToken()
 stack = deque() 
 
+def findCol(tok):
+    return lexanalysis.find_column(lexanalysis.contents, tok)
+
 
 print(tok)
 def updateTok():
@@ -24,6 +27,15 @@ def updateTok():
 def reportError(tok):
     print("*** Error line ", tok.lineno, ".")
     print(lexanalysis.lines[tok.lineno - 1])
+    errorLine = ""
+    length = findCol(tok)
+    while length:
+        errorLine += " "
+        length -= 1
+    for i in range(len(tok.value)):
+        errorLine += "^"
+    print(errorLine)
+    #print("column", findCol(tok), "token len", len(tok.value))
     print("*** syntax error")
     pass
 
@@ -65,7 +77,7 @@ def Decl():
                 return FunctionDecl()
             else:
                 print("going to vardecl") 
-                return VariableDecl()
+                return VariableDecl() and updateTok()
 
     
 
@@ -116,7 +128,7 @@ def StmtBlock():
         if tok.value == const.RCURLEY:
             return True
         else:
-            stmtBlckVar = VariableDeclRec() and printBool("token inside stmtBlock " + tok.value) and  tok.value == const.RCURLEY
+            stmtBlckVar = VariableDeclRec() and printBool("token inside stmtBlock... " + tok.value) and  tok.value == const.RCURLEY
             updateTok()
             return stmtBlckVar
                 
@@ -295,6 +307,10 @@ def Expr():
             print("operator found after constant")
             return updateTok() and Expr()
             #return True
+        elif tok.value == '.':
+            updateTok()
+            reportError(tok)
+            return False
         else:
             #changed from return true to return Expr()
             return True
@@ -332,17 +348,7 @@ def Actuals():
         if tok.value == const.RPAREN:
             updateTok()
             return True
-    """#updateTok()
-    if not Expr():
-        return False
-    #updateTok()
-    print("Token value inside actuals........", tok)
-    if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
-        return updateTok() and Actuals()
     
-    elif tok.value == const.RPAREN:
-        return True"""
-
 
     
 def IfStmt():
@@ -464,6 +470,7 @@ def PrintStmt():
                     return True
                 else:
                     print("returning false")
+                    reportError(tok)
                     return False
             
     else:
