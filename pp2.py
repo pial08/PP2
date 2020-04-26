@@ -13,22 +13,26 @@ def findCol(tok):
     return lexanalysis.find_column(lexanalysis.contents, tok)
 
 
-print(tok)
+def printBool(st):
+    #print(st)
+    return True
+
+printBool(str(tok))
 def updateTok():
-    #print("printing from updatetok OXOXOXOXOXOXXOOXOXOXO")
+    #printBool("printing from updatetok OXOXOXOXOXOXXOOXOXOXO")
     global tok
     tok = lexanalysis.getNextToken()
-    print(tok)
+    printBool(str(tok))
     if tok != None:
         return True
     else:
         return False
 
 def reportError(tok):
-    print("*** Error line ", tok.lineno, ".")
+    print("*** Error line " , tok.lineno , ".")
     print(lexanalysis.lines[tok.lineno - 1])
     errorLine = ""
-    length = findCol(tok)
+    length = findCol(tok) -1
     while length:
         errorLine += " "
         length -= 1
@@ -37,7 +41,7 @@ def reportError(tok):
     print(errorLine)
     #print("column", findCol(tok), "token len", len(tok.value))
     print("*** syntax error")
-    pass
+    #pass
 
 
 def getStackTop():
@@ -49,7 +53,7 @@ def getStackTop():
 def Program():
     if tok == None:
         return False
-    print("inside program")
+    printBool("inside program")
     return Decl() and ProgramP()
 
 
@@ -59,39 +63,39 @@ def ProgramP():
 
         return Program()
     else: 
-        print("ending")
+        printBool("ending")
         return True
 
 
 
 def Decl():
-    print("inside decl")
-    print(tok.value)
+    printBool("inside decl")
+    printBool(tok.value)
     if tok.value in const.typeList or tok.value == const.VOID:
-        print("method type  found")
+        printBool("method type  found")
         updateTok()
         if tok.type == "T_Identifier":
             updateTok()
-            print("tok.value", tok.value)
+            printBool("tok.value" + tok.value)
             if tok.value ==  const.LPAREN:
                 return FunctionDecl()
             else:
-                print("going to vardecl") 
+                printBool("going to vardecl") 
                 return VariableDecl() and updateTok()
 
     
 
 def VariableDecl():
-    print("inside var decl")
+    printBool("inside var decl")
     if tok.value == const.SEMICOLON:
-        print("semicolon found after var")
+        printBool("semicolon found after var")
         return True
     else:
         reportError(tok)
 
 
 def FunctionDecl():
-    print("inside funcdecl")
+    printBool("inside funcdecl")
     updateTok()
     forms  = Formals()
     
@@ -100,14 +104,14 @@ def FunctionDecl():
 
 
 def Formals():
-    print("inside formals")
+    printBool("inside formals")
     if tok.value == const.RPAREN:
         return True
 
     while True:
-        print("inside formal while loop....")
+        printBool("inside formal while loop....")
         if tok.value in const.typeList:
-            print("typelist found")
+            printBool("typelist found")
             updateTok()
             if tok.type == const.IDENT:
                 updateTok()
@@ -115,14 +119,14 @@ def Formals():
                     continue
                 
                 elif tok.value == const.RPAREN:
-                    print("returning from formals")
+                    printBool("returning from formals")
                     return True
             else:
                 reportError(tok)
                 return False
     
 def StmtBlock():
-    print("inside stmtBlock")
+    printBool("inside stmtBlock")
     if tok.value == const.LCURLEY:
         updateTok()
         if tok.value == const.RCURLEY:
@@ -140,23 +144,23 @@ def StmtBlock():
             Stmt()
         """
 def VariableDeclRec():
-    print("inside varDecRec")
+    printBool("inside varDecRec")
     #if tok.value == const.RCURLEY:
     #        return True
     if tok.value in const.typeList and (updateTok() and tok.type == const.IDENT):
         updateTok()
         return VariableDecl() and (updateTok() and VariableDeclRec()) 
     else:
-        print("going to statement........................")
+        printBool("going to statement........................")
         #return Stmt()
         while True:
-            print("inside while loop VarDeclRec !!!!!!!!!!!!!!!!!")
+            printBool("inside while loop VarDeclRec !!!!!!!!!!!!!!!!!")
             if Stmt(): 
                 if tok.value == const.RCURLEY:
-                    print("returning true from VarDeclRec")
+                    printBool("returning true from VarDeclRec")
                     return True
                 if tok.value == const.ELSE:
-                    print("else found")
+                    printBool("else found")
                     return True
                 updateTok()
                 
@@ -168,19 +172,19 @@ def VariableDeclRec():
 
 def Stmt():
     
-    print("inside stmt tok value", tok)
+    printBool("inside stmt tok value" + str(tok))
     if tok.value == const.RCURLEY:
-        print("returning after RCURLEY")
+        printBool("returning after RCURLEY")
         return True
 
     #comment out due to debbuging
     #updateTok()
     if tok.value == const.IF:
-        print("&&&&&& sending to if")
+        printBool("&&&&&& sending to if")
         if updateTok() and IfStmt():
             #updateTok()
             if tok.value == const.RCURLEY:
-                print("RCURLEY found after ifSTMT......")
+                printBool("RCURLEY found after ifSTMT......")
                 return True
             else:
                 return  Stmt()
@@ -188,20 +192,20 @@ def Stmt():
     elif tok.value == const.WHILE:
         if updateTok() and WhileStmt():
             if tok.value == const.RCURLEY:
-                print("RCURLEY found after WHILE_STMT......")
+                printBool("RCURLEY found after WHILE_STMT......")
                 return True
             else:
-                print("STMT found instead of RCURLEY")
+                printBool("STMT found instead of RCURLEY")
                 return Stmt()
 
     #changing for
     elif tok.value == const.FOR:
         if updateTok() and ForStmt():
             if tok.value == const.RCURLEY:
-                print("RCURLEY found after FOR_STMT......")
+                printBool("RCURLEY found after FOR_STMT......")
                 return True
             else:
-                print("STMT found instead of RCURLEY")
+                printBool("STMT found instead of RCURLEY")
                 return Stmt()
 
     #might need to add sth
@@ -209,14 +213,14 @@ def Stmt():
         return updateTok() and BreakStmt() and updateTok() and Stmt()
 
     elif tok.value == const.RETURN:
-        print("return found..............")
+        printBool("return found..............")
         return updateTok() and ReturnStmt()
     
     elif tok.value == const.PRINT: #and (updateTok() and tok.value == const.LPAREN):
         return updateTok() and PrintStmt() and updateTok() and Stmt()
 
     elif tok.value == const.SEMICOLON:
-        print("semicolon found")
+        printBool("semicolon found")
         return True
 
     elif tok.value == const.LCURLEY:
@@ -224,10 +228,10 @@ def Stmt():
         return StmtBlock() and printBool("returning from stmtBlock() " + tok.value)
     
     elif Expr() and tok.value == const.SEMICOLON:
-        print("returning after getting expr() and semicolon")
+        printBool("returning after getting expr() and semicolon")
         return True
         """
-        print("return from stmt()")
+        printBool("return from stmt()")
         boolVar = Expr() and tok.value == const.SEMICOLON and updateTok()
         if boolVar == True and tok.value == const.ELSE:
             return True
@@ -238,9 +242,7 @@ def Stmt():
         #on getting "{", code for stmt-->stmtBlock
 
 
-def printBool(st):
-    print(st)
-    return True
+
 """
 Expr ::= LValue = Expr | Constant | LValue | Call | ( Expr ) |
     Expr + Expr | Expr - Expr | Expr * Expr | Expr / Expr |
@@ -250,8 +252,8 @@ Expr ::= LValue = Expr | Constant | LValue | Call | ( Expr ) |
     ReadLine ( )
 """
 def Expr():
-    print("inside Expr")
-    print(tok)
+    printBool("inside Expr")
+    printBool(tok)
 
     #changed today
     """if tok.value == const.READINT:
@@ -262,13 +264,13 @@ def Expr():
     """
 
     if tok.value == const.LPAREN:
-        print("((((((( leftParen found")
+        printBool("((((((( leftParen found")
         #new code added and next token removed from if
         if (updateTok() and Expr()) and (printBool("*****bool print token... " + str(tok.value)) and tok.value == const.RPAREN):
-            print("returning true.....")
+            printBool("returning true.....")
             updateTok()
             if tok.value in const.operatorList:
-                print("operator list found in lparen")
+                printBool("operator list found in lparen")
                 return  updateTok() and Expr()
             else:
                 return True
@@ -282,16 +284,16 @@ def Expr():
         return updateTok() and Expr()
     
     elif tok.type == const.IDENT:
-        print("var ", tok.value, "found")
+        printBool("var " + tok.value + "found")
         updateTok()
-        print("checkpoint ...2 ")
+        printBool("checkpoint ...2 ")
         if tok.value == const.LPAREN:
-            print("checkpoint ... 3")
+            printBool("checkpoint ... 3")
             updateTok()
             return Actuals()
         
         elif (tok.value == const.EQUAL) or (tok.value in const.operatorList):
-            print("equal found")
+            printBool("equal found")
             return updateTok() and Expr()
         else: 
             
@@ -301,10 +303,10 @@ def Expr():
         #    return updateTok() and Expr()
             
     elif tok.type in const.constantList:
-        print("constant found")
+        printBool("constant found")
         updateTok()
         if tok.value in const.operatorList:
-            print("operator found after constant")
+            printBool("operator found after constant")
             return updateTok() and Expr()
             #return True
         elif tok.value == '.':
@@ -317,30 +319,30 @@ def Expr():
     
     
     #elif tok.value == const.RPAREN:
-    #    print("this part executed ***********************", tok)
+    #    printBool("this part executed ***********************", tok)
     #    return True
     #ReadInteger ( )
     elif tok.value == const.READINT or tok.value == const.READLINE:
-        print("readline or readint found............................")
+        printBool("readline or readint found............................")
         if (updateTok() and tok.value == const.LPAREN) and (updateTok() and tok.value == const.RPAREN):
             updateTok()
             return True
     else:
-        print("some error")
+        printBool("some error")
         return False
 
 
 def Actuals():
-    print("inside actuals")
+    printBool("inside actuals")
     if tok.value == const.RPAREN:
         return True
     
 
     while True:
-        print("tok at begin of while in actuals...", tok)
+        printBool("tok at begin of while in actuals..." + str(tok))
         if not Expr():
             return False
-        print("Tok value inside actuals.....", tok)
+        printBool("Tok value inside actuals....." + tok)
         if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
             #updateTok()
             continue
@@ -352,32 +354,32 @@ def Actuals():
 
     
 def IfStmt():
-    print("inside ifStmt")
+    printBool("inside ifStmt")
     if tok.value == const.LPAREN:
         ifVar = (updateTok() and Expr()) and (printBool("if ..." + str(tok.value)) and  tok.value == const.RPAREN)
         if not ifVar:
-            print("error inside if")
+            printBool("error inside if")
             return False
         if updateTok() and (printBool("calling stmt() from if")) and not Stmt():
-            print("ret false from ifStmt")
+            printBool("ret false from ifStmt")
             return False
-        print("-----------", tok)
+        printBool("-----------" + str(tok))
         if tok.value == const.SEMICOLON:
             updateTok()
         
         
             
         if  tok != None and tok.value == const.ELSE:
-            print("else found!!!")
+            printBool("else found!!!")
             updateTok()
             if not Stmt():
-                print("returning false from else*****")
+                printBool("returning false from else*****")
                 return False 
             else:
-                print("true for if with else------------------------------------", tok)
+                printBool("true for if with else------------------------------------"+ str(tok))
                 return True
         else:
-            print("true for if-----------XXXX-------------------------", tok)
+            printBool("true for if-----------XXXX-------------------------"+ str(tok))
             return True
     else:
         reportError(tok)
@@ -385,33 +387,33 @@ def IfStmt():
 
 
 def ForStmt():
-    print("inside FOR STMT___________________________---")
+    printBool("inside FOR STMT___________________________---")
     if tok.value == const.LPAREN:
         #semicolon found for( ;  )
-        print("lparen found")
+        printBool("lparen found")
         if updateTok() and tok.value == const.SEMICOLON:
-            print("First expresion not found")
+            printBool("First expresion not found")
             pass
         # for(i = 1;)
         elif not Expr() or ( tok.value != const.SEMICOLON):
-            print("second part is returning false")
+            printBool("second part is returning false")
             return False
 
         # for( i = 1; i > 5;)
-        print("token...", tok)
+        printBool("token...", tok)
         updateTok()
         if not Expr() or  (printBool("inside if~~~~~~~" + tok.value) and  not tok.value == const.SEMICOLON):
-            print("third part also returning false")
+            printBool("third part also returning false")
             return False 
         # for( i = 1; i > 5; )
         updateTok()
-        print("entering final part tok = ", tok)
+        printBool("entering final part tok = "+ str(tok))
         if tok.value == const.RPAREN:
-            print("----------returning true from  without third part")
+            printBool("----------returning true from  without third part")
             return updateTok() and Stmt()
 
         elif Expr() and printBool("from third part......" + tok.value) and tok.value == const.RPAREN:
-            print("++++++returning true from  with third part")
+            printBool("++++++returning true from  with third part")
             return updateTok() and Stmt()
         
 def WhileStmt():
@@ -419,20 +421,20 @@ def WhileStmt():
         
         whileVar = (updateTok() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
         if not whileVar:
-            print("error inside while.....")
+            printBool("error inside while.....")
             return False
         
         if updateTok() and not Stmt():
-            print("false in while O_O_O_O_O_O_O_O_")
+            printBool("false in while O_O_O_O_O_O_O_O_")
             return False           
-        print("true for while....", tok)
+        printBool("true for while...."+ str(tok))
         return True
     else:
         return False
 
 
 def ReturnStmt():
-    print("inside return stmt()", tok)
+    printBool("inside return stmt()"+ str(tok))
     if tok.value == const.SEMICOLON:
         return True
     elif Expr()  and (tok.value == const.SEMICOLON) and updateTok():
@@ -442,34 +444,34 @@ def ReturnStmt():
 
 def BreakStmt():
     if tok.value == const.SEMICOLON:
-        print("inside breakstmt() ", tok)
+        printBool("inside breakstmt() "+ str(tok))
         return True
 
 #PrintStmt  --> Print ( Expr + , ) ;
-#input Print(a, " ");
+#input printBool(a, " ");
 def PrintStmt():
     #LPRAREN checking removed from the caller method  
-    print("PPPPPPPPPP>>..>>>>>>>>inside print stmt", tok)
+    printBool("PPPPPPPPPP>>..>>>>>>>>inside print stmt"+ str(tok))
     if  tok.value == const.LPAREN: 
         while True:
-            print("inside print loop")
+            printBool("inside print loop")
             updateTok()
             if not Expr():
-                print("returning false from printStmt")
+                printBool("returning false from printStmt")
                 return False
             if tok.value == const.COMMA:
-                print(",,,,,,,,,,,,, comma found")
+                printBool(",,,,,,,,,,,,, comma found")
                 #updateTok()
                 continue
             elif tok.value == const.RPAREN:
-                print("Rparenn found ........in print ")
+                printBool("Rparenn found ........in print ")
                 updateTok()
-                print(tok)
+                printBool(tok)
                 if  tok != None and tok.value == const.SEMICOLON:
-                    print("returning true")
+                    printBool("returning true")
                     return True
                 else:
-                    print("returning false")
+                    printBool("returning false")
                     reportError(tok)
                     return False
             
@@ -480,8 +482,8 @@ def PrintStmt():
     
 
 def main():
-    print(Program())
-    #    print("true")
+    printBool(Program())
+    #    printBool("true")
 
 if __name__ == "__main__":
     main()
@@ -494,10 +496,10 @@ if __name__ == "__main__":
 """
    
     elif tok.value == const.LPAREN:
-        print("((((((( leftParen found")
+        printBool("((((((( leftParen found")
         #new code added and next token removed from if
         if (updateTok() and Expr()) and (printBool("*****bool print token... " + str(tok.value)) and tok.value == const.RPAREN):
-            print("returning true.....")
+            printBool("returning true.....")
             updateTok()
             if tok.value == const.SEMICOLON:
                 return True
@@ -509,7 +511,7 @@ if __name__ == "__main__":
 
 """
     else:
-        print("going to Expr from here")
+        printBool("going to Expr from here")
         return (Expr() and  tok.value == const.SEMICOLON) and (updateTok() and Stmt())
 
     """

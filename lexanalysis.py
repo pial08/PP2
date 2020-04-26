@@ -171,7 +171,7 @@ def t_MULTIPLY(t):
 def t_IDENTIFIER(t):
     r'[a-zA-Z][a-zA-Z_0-9]*'
     size = len(t.value)
-    print("size is ", size)
+    #print("size is ", size)
     t.type = 'T_Identifier'
     if reserved_list.get(t.value) != None:
         t.type = reserved_list.get(t.value)
@@ -257,7 +257,7 @@ if f.mode == 'r':
     contents = f.read()
 #print(contents)
 lines = contents.splitlines()
-print(lines)
+#print(lines)
 lexar.input(contents)
 #lexar.input("1.12e-6")
 
