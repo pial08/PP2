@@ -4,7 +4,9 @@ import lexanalysis
 from collections import deque 
   
 
-
+boolPrint = True
+astTree = "\n   Program:\n"
+print(astTree)
 
 tok = lexanalysis.getNextToken()
 stack = deque() 
@@ -17,7 +19,13 @@ def printBool(st):
     #print(st)
     return True
 
+def printError(st):
+    global boolPrint
+    if boolPrint:
+        print(st)
+
 printBool(str(tok))
+
 def updateTok():
     #printBool("printing from updatetok OXOXOXOXOXOXXOOXOXOXO")
     global tok
@@ -29,39 +37,41 @@ def updateTok():
         return False
 
 def reportError(tok):
-    print("*** Error line " , tok.lineno , ".")
-    print(lexanalysis.lines[tok.lineno - 1])
-    errorLine = ""
-    length = findCol(tok) -1
-    while length:
-        errorLine += " "
-        length -= 1
-    for i in range(len(tok.value)):
-        errorLine += "^"
-    print(errorLine)
-    #print("column", findCol(tok), "token len", len(tok.value))
-    print("*** syntax error")
+    global boolPrint
+    if boolPrint:
+        print()
+        printError("*** Error line " + str(tok.lineno) + ".")
+        printError(lexanalysis.lines[tok.lineno - 1])
+        errorLine = ""
+        length = findCol(tok) -1
+        while length:
+            errorLine += " "
+            length -= 1
+        for i in range(len(tok.value)):
+            errorLine += "^"
+        printError(errorLine)
+        #print("column", findCol(tok), "token len", len(tok.value))
+        printError("*** syntax error")
+        boolPrint = False
+        print()
+        print()
     #pass
 
 
-def getStackTop():
-    global stack
-    top = stack.pop()
-    stack.append(top)
-    return top
-
 def Program():
     if tok == None:
+        print("Empty program is syntactically incorrect.")
         return False
     printBool("inside program")
-    return Decl() and ProgramP()
+    return Decl() and  ProgramP()
 
 
 def ProgramP():
     #updateTok()
     if tok != None:
-
-        return Program()
+        updateTok()
+        if tok != None:
+            return Program()
     else: 
         printBool("ending")
         return True
@@ -74,7 +84,7 @@ def Decl():
     if tok.value in const.typeList or tok.value == const.VOID:
         printBool("method type  found")
         updateTok()
-        if tok.type == "T_Identifier":
+        if tok.type == const.IDENT:
             updateTok()
             printBool("tok.value" + tok.value)
             if tok.value ==  const.LPAREN:
@@ -82,7 +92,8 @@ def Decl():
             else:
                 printBool("going to vardecl") 
                 return VariableDecl() and updateTok()
-
+    else: 
+        printBool("error found")
     
 
 def VariableDecl():
@@ -92,6 +103,7 @@ def VariableDecl():
         return True
     else:
         reportError(tok)
+        return False
 
 
 def FunctionDecl():
@@ -313,6 +325,7 @@ def Expr():
             updateTok()
             reportError(tok)
             return False
+
         else:
             #changed from return true to return Expr()
             return True
@@ -328,7 +341,8 @@ def Expr():
             updateTok()
             return True
     else:
-        printBool("some error")
+        printBool("some error...")
+        reportError(tok)
         return False
 
 
@@ -341,6 +355,7 @@ def Actuals():
     while True:
         printBool("tok at begin of while in actuals..." + str(tok))
         if not Expr():
+            reportError(tok)
             return False
         printBool("Tok value inside actuals....." + tok)
         if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
@@ -359,9 +374,11 @@ def IfStmt():
         ifVar = (updateTok() and Expr()) and (printBool("if ..." + str(tok.value)) and  tok.value == const.RPAREN)
         if not ifVar:
             printBool("error inside if")
+            reportError(tok)
             return False
         if updateTok() and (printBool("calling stmt() from if")) and not Stmt():
             printBool("ret false from ifStmt")
+            reportError(tok)
             return False
         printBool("-----------" + str(tok))
         if tok.value == const.SEMICOLON:
@@ -374,6 +391,7 @@ def IfStmt():
             updateTok()
             if not Stmt():
                 printBool("returning false from else*****")
+                reportError(tok)
                 return False 
             else:
                 printBool("true for if with else------------------------------------"+ str(tok))
@@ -397,13 +415,15 @@ def ForStmt():
         # for(i = 1;)
         elif not Expr() or ( tok.value != const.SEMICOLON):
             printBool("second part is returning false")
+            reportError(tok)
             return False
 
         # for( i = 1; i > 5;)
-        printBool("token...", tok)
+        printBool("token..." + str(tok))
         updateTok()
         if not Expr() or  (printBool("inside if~~~~~~~" + tok.value) and  not tok.value == const.SEMICOLON):
             printBool("third part also returning false")
+            reportError(tok)
             return False 
         # for( i = 1; i > 5; )
         updateTok()
@@ -422,10 +442,12 @@ def WhileStmt():
         whileVar = (updateTok() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
         if not whileVar:
             printBool("error inside while.....")
+            reportError(tok)
             return False
         
         if updateTok() and not Stmt():
             printBool("false in while O_O_O_O_O_O_O_O_")
+            reportError(tok)
             return False           
         printBool("true for while...."+ str(tok))
         return True
@@ -440,6 +462,7 @@ def ReturnStmt():
     elif Expr()  and (tok.value == const.SEMICOLON) and updateTok():
         return True
     else:
+        reportError(tok)
         return False
 
 def BreakStmt():
@@ -458,6 +481,7 @@ def PrintStmt():
             updateTok()
             if not Expr():
                 printBool("returning false from printStmt")
+                reportError(tok)
                 return False
             if tok.value == const.COMMA:
                 printBool(",,,,,,,,,,,,, comma found")
@@ -476,6 +500,7 @@ def PrintStmt():
                     return False
             
     else:
+        reportError(tok)
         return False
     
         
