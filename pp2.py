@@ -1,15 +1,18 @@
 import sys
 import const
 import lexanalysis
-from collections import deque 
+from treelib.treelib import Node, Tree
   
 
 boolPrint = True
 astTree = "\n   Program:\n"
-print(astTree)
+#print(astTree)
+tree = Tree()
+tree.create_node("   .Program", "Program")  # root node
+
+parentNode = "Program"
 
 tok = lexanalysis.getNextToken()
-stack = deque() 
 
 def findCol(tok):
     return lexanalysis.find_column(lexanalysis.contents, tok)
@@ -79,15 +82,23 @@ def ProgramP():
 
 
 def Decl():
+    global parentNode
     printBool("inside decl")
     printBool(tok.value)
     if tok.value in const.typeList or tok.value == const.VOID:
         printBool("method type  found")
+        #this line added for AST
+        methodReturnType = tok.value
         updateTok()
         if tok.type == const.IDENT:
+            identifier = tok.value
             updateTok()
             printBool("tok.value" + tok.value)
             if tok.value ==  const.LPAREN:
+                tree.create_node("  " + str(tok.lineno) + ".FnDecl:", "FnDecl", parent = parentNode)
+                parentNode ="FnDecl"
+                tree.create_node("   " + ".(return type) Type: " + methodReturnType, "Type", parent=parentNode)
+                tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, "Identifier", parent=parentNode)
                 return FunctionDecl()
             else:
                 printBool("going to vardecl") 
@@ -138,7 +149,10 @@ def Formals():
                 return False
     
 def StmtBlock():
+    global parentNode
     printBool("inside stmtBlock")
+    tree.create_node("   " + ".(body) StmtBlock: ", "StmtBlock", parent=parentNode)
+    parentNode = "StmtBlock"
     if tok.value == const.LCURLEY:
         updateTok()
         if tok.value == const.RCURLEY:
@@ -266,7 +280,7 @@ Expr ::= LValue = Expr | Constant | LValue | Call | ( Expr ) |
 def Expr():
     printBool("inside Expr")
     printBool(tok)
-
+    constants = str(tok.type).split("_")
     #changed today
     """if tok.value == const.READINT:
         return True
@@ -316,6 +330,8 @@ def Expr():
             
     elif tok.type in const.constantList:
         printBool("constant found")
+        constants = str(tok.type).split("_")
+        tree.create_node("  " + str(tok.lineno) + ".(args) " + constants[1] + ": " + tok.value, constants[1], parent=parentNode)
         updateTok()
         if tok.value in const.operatorList:
             printBool("operator found after constant")
@@ -473,7 +489,11 @@ def BreakStmt():
 #PrintStmt  --> Print ( Expr + , ) ;
 #input printBool(a, " ");
 def PrintStmt():
-    #LPRAREN checking removed from the caller method  
+    #LPRAREN checking removed from the caller method
+    global parentNode
+    tree.create_node("  .PrintStmt:", "PrintStmt", parent=parentNode)
+    parentNode = "PrintStmt"
+
     printBool("PPPPPPPPPP>>..>>>>>>>>inside print stmt"+ str(tok))
     if  tok.value == const.LPAREN: 
         while True:
@@ -509,10 +529,11 @@ def PrintStmt():
 def main():
     printBool(Program())
     #    printBool("true")
+    tree.show(key = False, line_type = 'ascii-sp')
 
 if __name__ == "__main__":
     main()
-
+    
 
 
 
