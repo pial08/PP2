@@ -17,9 +17,12 @@ tok = lexanalysis.getNextToken()
 def findCol(tok):
     return lexanalysis.find_column(lexanalysis.contents, tok)
 
+def createParent(st):
+    return st + str(tok.lineno)
+
 
 def printBool(st):
-    #print(st)
+    print(st)
     return True
 
 def printError(st):
@@ -95,10 +98,10 @@ def Decl():
             updateTok()
             printBool("tok.value" + tok.value)
             if tok.value ==  const.LPAREN:
-                tree.create_node("  " + str(tok.lineno) + ".FnDecl:", "FnDecl", parent = parentNode)
-                parentNode ="FnDecl"
-                tree.create_node("   " + ".(return type) Type: " + methodReturnType, "Type", parent=parentNode)
-                tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, "Identifier", parent=parentNode)
+                tree.create_node("  " + str(tok.lineno) + ".FnDecl:", createParent("FnDecl"), parent = parentNode)
+                parentNode =createParent("FnDecl")
+                tree.create_node("   " + ".(return type) Type: " + methodReturnType, createParent("Type"), parent=parentNode)
+                tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
                 return FunctionDecl()
             else:
                 printBool("going to vardecl") 
@@ -151,8 +154,9 @@ def Formals():
 def StmtBlock():
     global parentNode
     printBool("inside stmtBlock")
-    tree.create_node("   " + ".(body) StmtBlock: ", "StmtBlock", parent=parentNode)
-    parentNode = "StmtBlock"
+    
+    tree.create_node("   " + ".(body) StmtBlock: ", createParent("StmtBlock"), parent=parentNode)
+    parentNode = createParent("StmtBlock")
     if tok.value == const.LCURLEY:
         updateTok()
         if tok.value == const.RCURLEY:
@@ -331,7 +335,7 @@ def Expr():
     elif tok.type in const.constantList:
         printBool("constant found")
         constants = str(tok.type).split("_")
-        tree.create_node("  " + str(tok.lineno) + ".(args) " + constants[1] + ": " + tok.value, constants[1], parent=parentNode)
+        tree.create_node("  " + str(tok.lineno) + ".(args) " + constants[1] + ": " + tok.value, createParent(constants[1]), parent=parentNode)
         updateTok()
         if tok.value in const.operatorList:
             printBool("operator found after constant")
@@ -491,8 +495,8 @@ def BreakStmt():
 def PrintStmt():
     #LPRAREN checking removed from the caller method
     global parentNode
-    tree.create_node("  .PrintStmt:", "PrintStmt", parent=parentNode)
-    parentNode = "PrintStmt"
+    tree.create_node("  .PrintStmt:", "PrintStmt" + str(tok.value), parent=parentNode)
+    parentNode = "PrintStmt" + str(tok.value)
 
     printBool("PPPPPPPPPP>>..>>>>>>>>inside print stmt"+ str(tok))
     if  tok.value == const.LPAREN: 
