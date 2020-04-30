@@ -1,4 +1,11 @@
-void main() {
-  Print("hello world");
-}
 
+
+void main() {
+  
+  b = a + b * c - e / d ;
+  a + b * c - e / d ;
+
+  return a + b;
+
+
+}

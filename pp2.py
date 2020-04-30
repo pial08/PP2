@@ -9,8 +9,9 @@ astTree = "\n   Program:\n"
 #print(astTree)
 tree = Tree()
 tree.create_node("   .Program", "Program")  # root node
-
+prevOperator = ""
 parentNode = "Program"
+
 
 tok = lexanalysis.getNextToken()
 
@@ -18,17 +19,39 @@ def findCol(tok):
     return lexanalysis.find_column(lexanalysis.contents, tok)
 
 def createParent(st):
-    return st + str(tok.lineno)
+    return st + str(tok.lineno) + str(findCol(tok))
 
+def setParent(st):
+    global parentNode
+    parentNode = st
+    return True
 
 def printBool(st):
-    print(st)
+    #print(st)
     return True
 
 def printError(st):
     global boolPrint
     if boolPrint:
         print(st)
+
+assgnHead = ""
+exprTree = Tree()
+def createExprTree():
+    global exprTree
+    global exprTreeHead
+    global lastTreeHead
+    global prevOperator
+    global currentTreeHead
+    global assgnHead
+    currentTreeHead = ""
+    prevOperator = ""
+    exprTreeHead = ""
+    lastTreeHead = ""
+    assgnHead = ""
+    exprTree = Tree()
+    return True
+
 
 printBool(str(tok))
 
@@ -75,9 +98,9 @@ def Program():
 def ProgramP():
     #updateTok()
     if tok != None:
-        updateTok()
-        if tok != None:
-            return Program()
+        #updateTok()
+        #if tok != None:
+        return Program()
     else: 
         printBool("ending")
         return True
@@ -93,19 +116,25 @@ def Decl():
         #this line added for AST
         methodReturnType = tok.value
         updateTok()
+        prevParent = parentNode
         if tok.type == const.IDENT:
             identifier = tok.value
             updateTok()
             printBool("tok.value" + tok.value)
             if tok.value ==  const.LPAREN:
+                
                 tree.create_node("  " + str(tok.lineno) + ".FnDecl:", createParent("FnDecl"), parent = parentNode)
                 parentNode =createParent("FnDecl")
                 tree.create_node("   " + ".(return type) Type: " + methodReturnType, createParent("Type"), parent=parentNode)
                 tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
-                return FunctionDecl()
+                return FunctionDecl() and setParent(prevParent)
             else:
-                printBool("going to vardecl") 
-                return VariableDecl() and updateTok()
+                printBool("going to vardecl")
+                tree.create_node("  " + str(tok.lineno) + ".VarDecl:", createParent("VarDecl"), parent = parentNode)
+                parentNode =createParent("VarDecl")
+                tree.create_node("   " + ".Type: " + methodReturnType, createParent("Type"), parent=parentNode)
+                tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
+                return VariableDecl() and updateTok() and setParent(prevParent)
     else: 
         printBool("error found")
     
@@ -130,6 +159,7 @@ def FunctionDecl():
 
 
 def Formals():
+    global parentNode
     printBool("inside formals")
     if tok.value == const.RPAREN:
         return True
@@ -138,21 +168,35 @@ def Formals():
         printBool("inside formal while loop....")
         if tok.value in const.typeList:
             printBool("typelist found")
+            prevParent = parentNode
+            varType = tok.value
             updateTok()
             if tok.type == const.IDENT:
+                identifier = tok.value
                 updateTok()
                 if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
+
+                    tree.create_node("  " + str(tok.lineno) + ".(formals) VarDecl:", createParent("VarDecl"), parent = parentNode)
+                    parentNode =createParent("VarDecl")
+                    tree.create_node("   " + ".Type: " + varType, createParent("Type"), parent=parentNode)
+                    tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
+                    setParent(prevParent)
                     continue
                 
                 elif tok.value == const.RPAREN:
                     printBool("returning from formals")
-                    return True
+                    tree.create_node("  " + str(tok.lineno) + ".(formals) VarDecl:", createParent("VarDecl"), parent = parentNode)
+                    parentNode =createParent("VarDecl")
+                    tree.create_node("   " + ".Type: " + varType, createParent("Type"), parent=parentNode)
+                    tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
+                    return True  and setParent(prevParent)
             else:
                 reportError(tok)
                 return False
     
 def StmtBlock():
     global parentNode
+    prevParent = parentNode
     printBool("inside stmtBlock")
     
     tree.create_node("   " + ".(body) StmtBlock: ", createParent("StmtBlock"), parent=parentNode)
@@ -160,11 +204,11 @@ def StmtBlock():
     if tok.value == const.LCURLEY:
         updateTok()
         if tok.value == const.RCURLEY:
-            return True
+            return True and setParent(prevParent)
         else:
             stmtBlckVar = VariableDeclRec() and printBool("token inside stmtBlock... " + tok.value) and  tok.value == const.RCURLEY
             updateTok()
-            return stmtBlckVar
+            return stmtBlckVar  and setParent(prevParent)
                 
 
         """
@@ -257,7 +301,7 @@ def Stmt():
         
         return StmtBlock() and printBool("returning from stmtBlock() " + tok.value)
     
-    elif Expr() and tok.value == const.SEMICOLON:
+    elif createExprTree() and Expr() and tok.value == const.SEMICOLON:
         printBool("returning after getting expr() and semicolon")
         return True
         """
@@ -281,10 +325,20 @@ Expr ::= LValue = Expr | Constant | LValue | Call | ( Expr ) |
     Expr && Expr | Expr || Expr | ! Expr | ReadInteger ( ) |
     ReadLine ( )
 """
+exprTreeHead = ""
+lastTreeHead = ""
+currentTreeHead = ""
+
 def Expr():
     printBool("inside Expr")
+    global exprTreeHead
+    global lastTreeHead
     printBool(tok)
-    constants = str(tok.type).split("_")
+    global assgnHead
+    global exprTree
+    global prevOperator
+    global currentTreeHead
+    prevParent = parentNode
     #changed today
     """if tok.value == const.READINT:
         return True
@@ -314,8 +368,27 @@ def Expr():
         return updateTok() and Expr()
     
     elif tok.type == const.IDENT:
+        identifier = tok.value
         printBool("var " + tok.value + "found")
+        #print("token position", tok[20])
         updateTok()
+        
+        
+        if tok.value == const.EQUAL:
+            exprType = "AssignExpr"
+            tree.create_node("  " + str(tok.lineno) + "." + exprType + ":", createParent(exprType), parent=parentNode)
+            assgnHead = createParent(exprType)
+            tree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
+            tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+            tree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=assgnHead)            
+        else:
+            exprType = "ArithmeticExpr"
+            
+        if assgnHead == "":
+            assgnHead = prevParent
+        print( " ************* ", assgnHead)
+        
+        
         printBool("checkpoint ...2 ")
         if tok.value == const.LPAREN:
             printBool("checkpoint ... 3")
@@ -324,9 +397,71 @@ def Expr():
         
         elif (tok.value == const.EQUAL) or (tok.value in const.operatorList):
             printBool("equal found")
+            if tok.value in const.operatorList:
+                print("inside here....")
+                currentOperator = str(tok.value)
+                if prevOperator == "":
+                    
+                    exprTreeHead = createParent(exprType)
+                    exprTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", exprTreeHead)
+                    exprTree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=exprTreeHead)
+                    exprTree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                    exprTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=exprTreeHead)            
+                    prevOperator = currentOperator
+                    lastTreeHead = exprTreeHead
+
+                elif const.precedenceList[prevOperator] >= const.precedenceList[currentOperator]:
+
+                    if currentTreeHead != "":
+                        exprTree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=currentTreeHead)
+
+                        exprTree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                        currentTreeHead = ""
+                    
+
+                    else:
+                        exprTree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=exprTreeHead)
+
+                        exprTree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                    
+                    tempTree=Tree()
+                    tempTreeHead = createParent(exprType)
+                    tempTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", tempTreeHead)
+                    tempTree.paste(tempTreeHead, exprTree)
+                    tempTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=tempTreeHead)            
+                    exprTree = tempTree
+                    exprTreeHead = tempTreeHead
+                    prevOperator = currentOperator
+                    lastTreeHead = tempTreeHead 
+
+                elif const.precedenceList[prevOperator] < const.precedenceList[currentOperator]:
+                    tempTree=Tree()
+                    tempTreeHead = createParent(exprType)
+                    tempTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", tempTreeHead)
+                    tempTree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=tempTreeHead)
+                    tempTree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                    tempTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=tempTreeHead)            
+                    exprTree.paste(exprTreeHead, tempTree)
+                    prevOperator = currentOperator
+                    lastTreeHead = tempTreeHead
+                    currentTreeHead = tempTreeHead
+
+
+
             return updateTok() and Expr()
-        else: 
-            
+        else:
+            if exprTree:
+                exprTree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=lastTreeHead)
+                exprTree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                
+                tree.paste(assgnHead, exprTree)
+                createExprTree()
+            else:
+                tree.create_node("  " + str(tok.lineno) + ".FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
+                tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
+                
+
+            setParent(prevParent)
             return True
         
         #elif tok.value in const.operatorList:
@@ -348,6 +483,7 @@ def Expr():
 
         else:
             #changed from return true to return Expr()
+            #setParent(prevParent)
             return True
     
     
@@ -377,7 +513,7 @@ def Actuals():
         if not Expr():
             reportError(tok)
             return False
-        printBool("Tok value inside actuals....." + tok)
+        printBool("Tok value inside actuals....." + str(tok))
         if tok.value == const.COMMA and (updateTok() and tok.value != const.RPAREN):
             #updateTok()
             continue
@@ -477,10 +613,14 @@ def WhileStmt():
 
 def ReturnStmt():
     printBool("inside return stmt()"+ str(tok))
+    global parentNode
+    prevParent = parentNode
+    tree.create_node("  " + str(tok.lineno) + ".ReturnStmt:", createParent("ReturnStmt"), parent=parentNode)
+    parentNode = createParent("ReturnStmt")
     if tok.value == const.SEMICOLON:
-        return True
-    elif Expr()  and (tok.value == const.SEMICOLON) and updateTok():
-        return True
+        return True and setParent(prevParent)
+    elif createExprTree() and Expr()  and (tok.value == const.SEMICOLON) and updateTok():
+        return True and setParent(prevParent)
     else:
         reportError(tok)
         return False
@@ -495,6 +635,7 @@ def BreakStmt():
 def PrintStmt():
     #LPRAREN checking removed from the caller method
     global parentNode
+    prevParent = parentNode
     tree.create_node("  .PrintStmt:", "PrintStmt" + str(tok.value), parent=parentNode)
     parentNode = "PrintStmt" + str(tok.value)
 
@@ -510,6 +651,7 @@ def PrintStmt():
             if tok.value == const.COMMA:
                 printBool(",,,,,,,,,,,,, comma found")
                 #updateTok()
+                setParent(prevParent)
                 continue
             elif tok.value == const.RPAREN:
                 printBool("Rparenn found ........in print ")
@@ -517,7 +659,7 @@ def PrintStmt():
                 printBool(tok)
                 if  tok != None and tok.value == const.SEMICOLON:
                     printBool("returning true")
-                    return True
+                    return True and setParent(prevParent)
                 else:
                     printBool("returning false")
                     reportError(tok)
@@ -534,6 +676,8 @@ def main():
     printBool(Program())
     #    printBool("true")
     tree.show(key = False, line_type = 'ascii-sp')
+    print("#*#*#*#*#*#*##*#*#*#*#*#*#*#*#*")
+    exprTree.show(key = False, line_type='ascii-sp')
 
 if __name__ == "__main__":
     main()
