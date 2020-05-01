@@ -376,6 +376,8 @@ def Expr():
         return (updateTok() and Expr())
 
     elif tok.value == const.NOT:
+        tree.create_node("  " + str(tok.lineno) + ".LogicalExpr:", createParent("LogicalExpr"), parent=parentNode)
+        tree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=createParent("LogicalExpr"))            
         return updateTok() and Expr()
     
     elif tok.type == const.IDENT:
@@ -401,9 +403,13 @@ def Expr():
         
         printBool("checkpoint ...2 ")
         if tok.value == const.LPAREN:
+            tree.create_node("  " + str(tok.lineno) + ".Call:", createParent("Call"), parent = parentNode)
+            tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=createParent("Call"))
+
+            setParent(createParent("Call"))
             printBool("checkpoint ... 3")
             updateTok()
-            return Actuals()
+            return Actuals() and setParent(prevParent)
         
         elif (tok.value == const.EQUAL) or (tok.value in const.operatorList):
             printBool("equal found")
@@ -590,7 +596,7 @@ def Actuals():
 
     while True:
         printBool("tok at begin of while in actuals..." + str(tok))
-        if not Expr():
+        if createExprTree() and not Expr():
             reportError(tok)
             return False
         printBool("Tok value inside actuals....." + str(tok))

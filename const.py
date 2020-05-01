@@ -48,10 +48,13 @@ STRINGCONSTANT = "T_StringConstant"
 NULL = "null"
 
 constantList = [INTCONSTANT, DOUBLECONSTANT, BOOLCONSTANT, STRINGCONSTANT]
+relationalOperator = [GREATER, GREATEREQUAL, LESS, LESSEQUAL]
+equalityOperator = [EEQUAL, NOTEQUAL]
+logicalOperator = [AND, OR, NOT]
 
 
 
 typeList = [INT, DOUBLE, BOOL, STRING, NULL]
 
 
-precedenceList = {"!": 8, "-": 8 ,"*": 7, "/": 7, "%": 7 , "+": 6, "-": 6, "<":5, "<=": 5, ">": 5, ">=": 5, "==": 4, "!=": 4, "&&": 3, "||": 2, "=": 1}
+precedenceList = {"!": 8, "*": 7, "/": 7, "%": 7 , "+": 6, "-": 6, "<":5, "<=": 5, ">": 5, ">=": 5, "==": 4, "!=": 4, "&&": 3, "||": 2, "=": 1}
