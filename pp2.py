@@ -221,7 +221,18 @@ def VariableDeclRec():
     printBool("inside varDecRec")
     #if tok.value == const.RCURLEY:
     #        return True
+    global parentNode
+    prevParent = parentNode
+    varType = tok.value
     if tok.value in const.typeList and (updateTok() and tok.type == const.IDENT):
+        
+        identifier = tok.value
+        tree.create_node("  " + str(tok.lineno) + ".(formals) VarDecl:", createParent("VarDecl"), parent = parentNode)
+        parentNode =createParent("VarDecl")
+        tree.create_node("   " + ".Type: " + varType, createParent("Type"), parent=parentNode)
+        tree.create_node("  " + str(tok.lineno) + ".Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
+        setParent(prevParent)
+
         updateTok()
         return VariableDecl() and (updateTok() and VariableDeclRec()) 
     else:
@@ -386,7 +397,6 @@ def Expr():
             
         if assgnHead == "":
             assgnHead = prevParent
-        print( " ************* ", assgnHead)
         
         
         printBool("checkpoint ...2 ")
@@ -398,7 +408,6 @@ def Expr():
         elif (tok.value == const.EQUAL) or (tok.value in const.operatorList):
             printBool("equal found")
             if tok.value in const.operatorList:
-                print("inside here....")
                 currentOperator = str(tok.value)
                 if prevOperator == "":
                     
@@ -469,11 +478,72 @@ def Expr():
             
     elif tok.type in const.constantList:
         printBool("constant found")
+        constantVal = str(tok.value)
         constants = str(tok.type).split("_")
-        tree.create_node("  " + str(tok.lineno) + ".(args) " + constants[1] + ": " + tok.value, createParent(constants[1]), parent=parentNode)
+        if str(tok.type) == const.STRINGCONSTANT:
+            con = ".(args) " + constants[1] + ": "
+        else:
+            con = "." + constants[1] + ": "
+        par = constants[1]
+        #tree.create_node("  " + str(tok.lineno) + ".(args) " + constants[1] + ": " + tok.value, createParent(constants[1]), parent=parentNode)
         updateTok()
+
+        exprType = "ArithmeticExpr"
+        if assgnHead == "":
+            assgnHead = prevParent
+
+
         if tok.value in const.operatorList:
             printBool("operator found after constant")
+            currentOperator = str(tok.value)
+            if prevOperator == "":
+                
+                exprTreeHead = createParent(exprType)
+                exprTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", exprTreeHead)
+                exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=exprTreeHead)
+                exprTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=exprTreeHead)            
+                prevOperator = currentOperator
+                lastTreeHead = exprTreeHead
+
+            elif const.precedenceList[prevOperator] >= const.precedenceList[currentOperator]:
+
+                if currentTreeHead != "":
+
+                    exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=currentTreeHead)
+                    currentTreeHead = ""
+                
+
+                else:
+
+                    exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=exprTreeHead)
+                
+                tempTree=Tree()
+                tempTreeHead = createParent(exprType)
+                tempTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", tempTreeHead)
+                tempTree.paste(tempTreeHead, exprTree)
+                tempTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=tempTreeHead)            
+                exprTree = tempTree
+                exprTreeHead = tempTreeHead
+                prevOperator = currentOperator
+                lastTreeHead = tempTreeHead 
+
+            elif const.precedenceList[prevOperator] < const.precedenceList[currentOperator]:
+                tempTree=Tree()
+                tempTreeHead = createParent(exprType)
+                tempTree.create_node("  " + str(tok.lineno) + "." + exprType + ":", tempTreeHead)
+                tempTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=tempTreeHead)
+                tempTree.create_node("  " + str(tok.lineno) + ".Operator: " + str(tok.value), createParent("Operator"), parent=tempTreeHead)            
+                exprTree.paste(exprTreeHead, tempTree)
+                prevOperator = currentOperator
+                lastTreeHead = tempTreeHead
+                currentTreeHead = tempTreeHead
+
+            
+
+
+
+
+
             return updateTok() and Expr()
             #return True
         elif tok.value == '.':
@@ -483,7 +553,17 @@ def Expr():
 
         else:
             #changed from return true to return Expr()
-            #setParent(prevParent)
+
+            if exprTree:
+                exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=lastTreeHead)
+                
+                tree.paste(assgnHead, exprTree)
+                createExprTree()
+            else:
+                tree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=assgnHead)
+                
+
+            setParent(prevParent)
             return True
     
     
