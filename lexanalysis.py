@@ -75,7 +75,7 @@ operator_list = {
     'RBRACE': '}'
 }
 
-t_ignore = r' '
+t_ignore  = ' \t'
 t_EQL = r'='
 t_PERCENTAGE = r'%'
 t_LESS = r'<'
@@ -196,7 +196,6 @@ def t_StringConstant(t):
     
     
     return t
-
 
 
 def t_newline(t):
