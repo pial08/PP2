@@ -5,15 +5,25 @@ from treelib.treelib import Node, Tree
   
 
 boolPrint = True
-astTree = "\n   Program:\n"
-#print(astTree)
+
 tree = Tree()
-tree.create_node("   .Program", "Program")  # root node
+tree.create_node("   $Program:", "Program")  # root node
 prevOperator = ""
 parentNode = "Program"
+prefix = ""
 
 
 tok = lexanalysis.getNextToken()
+
+def resetPrefix():
+    global prefix
+    prefix = ""
+    return True
+def setPrefix(st):
+    global prefix
+    prefix = st
+    return True
+
 
 def findCol(tok):
     return lexanalysis.find_column(lexanalysis.contents, tok)
@@ -227,7 +237,7 @@ def VariableDeclRec():
     if tok.value in const.typeList and (updateTok() and tok.type == const.IDENT):
         
         identifier = tok.value
-        tree.create_node("  " + str(tok.lineno) + "$(formals) VarDecl:", createParent("VarDecl"), parent = parentNode)
+        tree.create_node("  " + str(tok.lineno) + "$VarDecl:", createParent("VarDecl"), parent = parentNode)
         parentNode =createParent("VarDecl")
         tree.create_node("   " + "$Type: " + varType, createParent("Type"), parent=parentNode)
         tree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
@@ -339,8 +349,10 @@ Expr ::= LValue = Expr | Constant | LValue | Call | ( Expr ) |
 exprTreeHead = ""
 lastTreeHead = ""
 currentTreeHead = ""
-
+unary = False
 def Expr():
+    global unary
+
     printBool("inside Expr")
     global exprTreeHead
     global lastTreeHead
@@ -373,12 +385,19 @@ def Expr():
 
 
     elif tok.value == const.MINUS:
+        tree.create_node("  " + str(tok.lineno) + "$" + prefix + "ArithmeticExpr:", createParent("ArithmeticExpr"), parent=parentNode)
+        tree.create_node("  " + str(tok.lineno) + "$Operator: " + str(tok.value), createParent("Operator"), parent=createParent("ArithmeticExpr"))            
+        setParent(prevParent)
+        unary = True
+        assgnHead = createParent("ArithmeticExpr")
         return (updateTok() and Expr())
 
     elif tok.value == const.NOT:
-        tree.create_node("  " + str(tok.lineno) + "$LogicalExpr:", createParent("LogicalExpr"), parent=parentNode)
+        tree.create_node("  " + str(tok.lineno) + "$" + prefix + "LogicalExpr:", createParent("LogicalExpr"), parent=parentNode)
         tree.create_node("  " + str(tok.lineno) + "$Operator: " + str(tok.value), createParent("Operator"), parent=createParent("LogicalExpr"))            
-        setParent(createParent("LogicalExpr"))
+        setParent(prevParent)
+        unary = True
+        assgnHead = createParent("LogicalExpr")
         return updateTok() and Expr()
     
     elif tok.type == const.IDENT:
@@ -425,7 +444,7 @@ def Expr():
                 if prevOperator == "":
                     
                     exprTreeHead = createParent(exprType)
-                    exprTree.create_node("  " + str(tok.lineno) + "$" + exprType + ":", exprTreeHead)
+                    exprTree.create_node("  " + str(tok.lineno) + "$" +  exprType + ":", exprTreeHead)
                     exprTree.create_node("  " + str(tok.lineno) + "$FieldAccess:", createParent("FieldAccess"), parent=exprTreeHead)
                     exprTree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
                     exprTree.create_node("  " + str(tok.lineno) + "$Operator: " + str(tok.value), createParent("Operator"), parent=exprTreeHead)            
@@ -473,15 +492,22 @@ def Expr():
             return updateTok() and Expr()
         else:
             if exprTree:
+
                 exprTree.create_node("  " + str(tok.lineno) + "$FieldAccess:", createParent("FieldAccess"), parent=lastTreeHead)
                 exprTree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
-                
+                tag = exprTree.__getitem__(exprTree.root).tag
+                tag = tag.split("$")[0] + "$" + prefix + tag.split("$")[1]
+                exprTree.update_node(exprTree.root, tag)
                 tree.paste(assgnHead, exprTree)
                 createExprTree()
             else:
-                tree.create_node("  " + str(tok.lineno) + "$FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
+                if unary == False:
+                    tree.create_node("  " + str(tok.lineno) + "$" + prefix + "FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
+                else: 
+                    tree.create_node("  " + str(tok.lineno) + "$" + "FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
                 tree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
-                
+
+                unary = False
 
             setParent(prevParent)
             return True
@@ -500,7 +526,7 @@ def Expr():
 
         constants = str(tok.type).split("_")
         if str(tok.type) == const.STRINGCONSTANT:
-            con = "$(args) " + constants[1] + ": "
+            con = "$" + constants[1] + ": "
         else:
             con = "$" + constants[1] + ": "
         par = constants[1]
@@ -526,7 +552,7 @@ def Expr():
             if prevOperator == "":
                 
                 exprTreeHead = createParent(exprType)
-                exprTree.create_node("  " + str(tok.lineno) + "$" + exprType + ":", exprTreeHead)
+                exprTree.create_node("  " + str(tok.lineno) + "$"  + exprType + ":", exprTreeHead)
                 exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=exprTreeHead)
                 exprTree.create_node("  " + str(tok.lineno) + "$Operator: " + str(tok.value), createParent("Operator"), parent=exprTreeHead)            
                 prevOperator = currentOperator
@@ -582,12 +608,20 @@ def Expr():
             #changed from return true to return Expr()
             if exprTree:
                 exprTree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=lastTreeHead)
+                tag = exprTree.__getitem__(exprTree.root).tag
+                tag = tag.split("$")[0] + "$" + prefix + tag.split("$")[1]
+                exprTree.update_node(exprTree.root, tag)
                 tree.paste(assgnHead, exprTree)
                 createExprTree()
-            else:
-                tree.create_node("  " + str(tok.lineno) + con + constantVal, createParent(par), parent=assgnHead)
                 
+            else:
+                if unary == False:
+                    tree.create_node("  " + str(tok.lineno) + "$" + prefix + constants[1] +": " + constantVal, createParent(par), parent=assgnHead)
+                else:
+                    tree.create_node("  " + str(tok.lineno) + "$" + constants[1] +": " + constantVal, createParent(par), parent=assgnHead)
+                    
 
+                unary = False
 
             setParent(prevParent)
             return True
@@ -601,7 +635,7 @@ def Expr():
         printBool("readline or readint found............................")
         if assgnHead == "":
             assgnHead = prevParent
-        tree.create_node("  " + str(tok.lineno) + "$" + str(tok.value) + ":", createParent(str(tok.value)), parent=assgnHead)
+        tree.create_node("  " + str(tok.lineno) + "$" + str(tok.value) + "Expr:", createParent(str(tok.value)), parent=assgnHead)
         if (updateTok() and tok.value == const.LPAREN) and (updateTok() and tok.value == const.RPAREN):
             updateTok()
             return True
@@ -615,6 +649,7 @@ def Expr():
 
 
 def Actuals():
+    setPrefix("(actuals) ")
     printBool("inside actuals")
     if tok.value == const.RPAREN:
         return True
@@ -632,7 +667,10 @@ def Actuals():
         
         if tok.value == const.RPAREN:
             updateTok()
-            return True
+            return resetPrefix() and True
+        else:
+            reportError(tok)
+            return False
     
 
     
@@ -748,16 +786,15 @@ def PrintStmt():
     #LPRAREN checking removed from the caller method
     global parentNode
     prevParent = parentNode
-    tree.create_node("  $PrintStmt:", createParent("PrintStmt"), parent=parentNode)
-    setParent(createParent("PrintStmt"))
-    #parentNode = "PrintStmt" + str(tok.value)
-
+    tree.create_node("    $PrintStmt:", createParent("PrintStmt"), parent=parentNode)
+    par = createParent("PrintStmt")
+    setPrefix("(args) ")
     printBool("PPPPPPPPPP>>..>>>>>>>>inside print stmt"+ str(tok))
     if  tok.value == const.LPAREN: 
-        while True:
+        while True and setParent(par):
             printBool("inside print loop")
             updateTok()
-            if not Expr():
+            if createExprTree() and not Expr():
                 printBool("returning false from printStmt")
                 reportError(tok)
                 return False
@@ -772,7 +809,7 @@ def PrintStmt():
                 printBool(tok)
                 if  tok != None and tok.value == const.SEMICOLON:
                     printBool("returning true")
-                    return True and setParent(prevParent)
+                    return True and setParent(prevParent) and resetPrefix()
                 else:
                     printBool("returning false")
                     reportError(tok)
