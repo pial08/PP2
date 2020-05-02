@@ -51,6 +51,7 @@ constantList = [INTCONSTANT, DOUBLECONSTANT, BOOLCONSTANT, STRINGCONSTANT]
 relationalOperator = [GREATER, GREATEREQUAL, LESS, LESSEQUAL]
 equalityOperator = [EEQUAL, NOTEQUAL]
 logicalOperator = [AND, OR, NOT]
+arithmaticOperator = [PLUS, MINUS, MULTIPLY, DIVIDE, MOD]
 
 
 
