@@ -409,7 +409,8 @@ def Expr():
         
         if tok.value == const.EQUAL:
             exprType = "AssignExpr"
-            tree.create_node("  " + str(tok.lineno) + "$" + exprType + ":", createParent(exprType), parent=parentNode)
+            tree.create_node("  " + str(tok.lineno) + "$" + prefix + exprType + ":", createParent(exprType), parent=parentNode)
+            resetPrefix()
             assgnHead = createParent(exprType)
             tree.create_node("  " + str(tok.lineno) + "$FieldAccess:", createParent("FieldAccess"), parent=assgnHead)
             tree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=createParent("FieldAccess"))
@@ -711,15 +712,21 @@ def IfStmt():
 
 
 def ForStmt():
-    printBool("inside FOR STMT___________________________---")
+    prevParent = parentNode
+    tree.create_node("   $ForStmt:", createParent("ForStmt"), parent=prevParent)
+    setParent(createParent("ForStmt"))
+    
+
     if tok.value == const.LPAREN:
         #semicolon found for( ;  )
         printBool("lparen found")
+        setPrefix("(init) ")
         if updateTok() and tok.value == const.SEMICOLON:
-            printBool("First expresion not found")
+            tree.create_node("   $" + prefix + "Empty:", createParent("Empty"), parent=parentNode)
+            print("First expresion not found")
             pass
         # for(i = 1;)
-        elif not Expr() or ( tok.value != const.SEMICOLON):
+        elif createExprTree() and not Expr() or ( tok.value != const.SEMICOLON):
             printBool("second part is returning false")
             reportError(tok)
             return False
@@ -727,25 +734,37 @@ def ForStmt():
         # for( i = 1; i > 5;)
         printBool("token..." + str(tok))
         updateTok()
-        if not Expr() or  (printBool("inside if~~~~~~~" + tok.value) and  not tok.value == const.SEMICOLON):
-            printBool("third part also returning false")
+        setPrefix("(test) ")
+        if createExprTree() and not Expr() or  (printBool("inside if~~~~~~~" + tok.value) and  not tok.value == const.SEMICOLON):
+            printBool("second part also returning false")
             reportError(tok)
             return False 
         # for( i = 1; i > 5; )
         updateTok()
+        setPrefix("(step) ")
         printBool("entering final part tok = "+ str(tok))
         if tok.value == const.RPAREN:
+            tree.create_node("   $" + prefix + "Empty:", createParent("Empty"), parent=parentNode)
             printBool("----------returning true from  without third part")
-            return updateTok() and Stmt()
+            return updateTok() and Stmt() and setParent(prevParent)
 
-        elif Expr() and printBool("from third part......" + tok.value) and tok.value == const.RPAREN:
+        elif createExprTree() and Expr() and printBool("from third part......" + tok.value) and tok.value == const.RPAREN:
             printBool("++++++returning true from  with third part")
-            return updateTok() and Stmt()
-        
+            return updateTok() and Stmt() and setParent(prevParent)
+        #return true
+    else:
+        reportError(tok)
+        return False
+
+
 def WhileStmt():
+    prevParent = parentNode
+    tree.create_node("   $WhileStmt:", createParent("WhileStmt"), parent=prevParent)
+    setParent(createParent("WhileStmt"))
+    setPrefix("(test) ")
     if tok.value == const.LPAREN:
         
-        whileVar = (updateTok() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
+        whileVar = (updateTok() and createExprTree() and Expr()) and (printBool("while!!!!!!!!!!!!!" + str(tok.value)) and tok.value == const.RPAREN)
         if not whileVar:
             printBool("error inside while.....")
             reportError(tok)
@@ -756,18 +775,19 @@ def WhileStmt():
             reportError(tok)
             return False           
         printBool("true for while...."+ str(tok))
-        return True
+        return True and setParent(prevParent) and resetPrefix()
     else:
+        reportError(tok)
         return False
 
 
 def ReturnStmt():
     printBool("inside return stmt()"+ str(tok))
-    global parentNode
     prevParent = parentNode
     tree.create_node("  " + str(tok.lineno) + "$ReturnStmt:", createParent("ReturnStmt"), parent=parentNode)
-    parentNode = createParent("ReturnStmt")
+    par = createParent("ReturnStmt")
     if tok.value == const.SEMICOLON:
+        tree.create_node("   $Empty:", createParent("Empty"), parent=par)
         return True and setParent(prevParent)
     elif createExprTree() and Expr()  and (tok.value == const.SEMICOLON) and updateTok():
         return True and setParent(prevParent)
@@ -777,8 +797,13 @@ def ReturnStmt():
 
 def BreakStmt():
     if tok.value == const.SEMICOLON:
+        prevParent = parentNode
+        tree.create_node("  " + str(tok.lineno) + "$" + prefix + "BreakStmt:", createParent("BreakStmt"), parent=parentNode)
         printBool("inside breakstmt() "+ str(tok))
-        return True
+        return True and setParent(prevParent)
+    else:
+        reportError(tok)
+        return False
 
 #PrintStmt  --> Print ( Expr + , ) ;
 #input printBool(a, " ");

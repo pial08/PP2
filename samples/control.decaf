@@ -13,7 +13,7 @@ void main() {
   else
      done = true;
 
-  for (; a <= 10 || done; a = a + 1) {
+  for (a = 1; a <= 10 || done;) {
      Print(a, " ");
      if (a == 10) a;
   }
