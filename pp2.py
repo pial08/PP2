@@ -145,8 +145,14 @@ def Decl():
                 tree.create_node("   " + "$Type: " + methodReturnType, createParent("Type"), parent=parentNode)
                 tree.create_node("  " + str(tok.lineno) + "$Identifier: " + identifier, createParent("Identifier"), parent=parentNode)
                 return VariableDecl() and updateTok() and setParent(prevParent)
-    else: 
+        else:
+            reportError(tok)
+            return False
+    else:
+        reportError(tok)
+
         printBool("error found")
+        return False
     
 
 def VariableDecl():
@@ -325,6 +331,10 @@ def Stmt():
     elif createExprTree() and Expr() and tok.value == const.SEMICOLON:
         printBool("returning after getting expr() and semicolon")
         return True
+
+    else:
+        reportError(tok)
+        return False    
         """
         printBool("return from stmt()")
         boolVar = Expr() and tok.value == const.SEMICOLON and updateTok()
@@ -676,9 +686,15 @@ def Actuals():
 
     
 def IfStmt():
+    prevParent = parentNode
+    tree.create_node("   $IfStmt:", createParent("IfStmt"), parent=prevParent)
+    setParent(createParent("IfStmt"))
+    
     printBool("inside ifStmt")
     if tok.value == const.LPAREN:
-        ifVar = (updateTok() and Expr()) and (printBool("if ..." + str(tok.value)) and  tok.value == const.RPAREN)
+        setPrefix("(test) ")
+        ifVar = (updateTok() and createExprTree() and Expr()) and (printBool("if ..." + str(tok.value)) and  tok.value == const.RPAREN)
+        setPrefix("(then) ")
         if not ifVar:
             printBool("error inside if")
             reportError(tok)
@@ -694,6 +710,7 @@ def IfStmt():
         
             
         if  tok != None and tok.value == const.ELSE:
+            setPrefix("(else) ")
             printBool("else found!!!")
             updateTok()
             if not Stmt():
@@ -702,10 +719,10 @@ def IfStmt():
                 return False 
             else:
                 printBool("true for if with else------------------------------------"+ str(tok))
-                return True
+                return True and setParent(prevParent) and resetPrefix()
         else:
             printBool("true for if-----------XXXX-------------------------"+ str(tok))
-            return True
+            return True and setParent(prevParent) and resetPrefix()
     else:
         reportError(tok)
         return False
@@ -723,7 +740,7 @@ def ForStmt():
         setPrefix("(init) ")
         if updateTok() and tok.value == const.SEMICOLON:
             tree.create_node("   $" + prefix + "Empty:", createParent("Empty"), parent=parentNode)
-            print("First expresion not found")
+            printBool("First expresion not found")
             pass
         # for(i = 1;)
         elif createExprTree() and not Expr() or ( tok.value != const.SEMICOLON):
@@ -848,12 +865,13 @@ def PrintStmt():
     
 
 def main():
-    printBool(Program())
-    #    printBool("true")
-    tree.show(key = False, line_type = 'ascii-sp')
-    print("#*#*#*#*#*#*##*#*#*#*#*#*#*#*#*")
-    exprTree.show(key = False, line_type='ascii-sp')
+    #printBool(Program())
 
+    #    printBool("true")
+    if Program():
+        print("")
+        tree.show(key = False, line_type = 'ascii-sp')
+    
 if __name__ == "__main__":
     main()
     
